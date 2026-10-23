@@ -1,4 +1,7 @@
 
+
+
+from logging import root
 import os
 import excel_storage
 import tkinter as tk
@@ -11,7 +14,8 @@ class FinanceApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Учёт финансов")
-        self.root.geometry("400x350")
+        root.geometry("700x600")
+        root.minsize(600, 500)
         self.root.resizable(False, False)
 
         tk.Label(
@@ -82,6 +86,11 @@ class FinanceApp:
             command=self.open_excel
         ).pack(pady=(0, 10))
 
+        tk.Button(
+            root,
+            text="Сбросить баланс",
+            command=self.reset_balance
+        ).pack(pady=(0, 10))
 
         self.update_display()
 
@@ -135,7 +144,33 @@ class FinanceApp:
                 "Ошибка",
                 f"Не удалось обработать операцию:\n{error}"
             )
+    def reset_balance(self):
+        """Сбрасывает все финансовые данные после подтверждения."""
 
+        answer = messagebox.askyesno(
+            "Сброс баланса",
+            "Вы действительно хотите удалить все данные? "
+            "Это действие нельзя отменить."
+        )
+
+        if not answer:
+            return
+
+        try:
+            excel_storage.reset_data()
+            self.update_display()
+
+            messagebox.showinfo(
+                "Сброс выполнен",
+                "Все данные удалены."
+            )
+
+        except OSError as error:
+            messagebox.showerror(
+                "Ошибка сброса",
+                f"Не удалось сбросить данные.\n"
+                f"Возможно, файл открыт в Excel.\n\n{error}"
+            )
 
 def run_app():
     root = tk.Tk()

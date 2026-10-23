@@ -135,3 +135,11 @@ def get_file_path():
     """Возвращает путь к Excel-файлу."""
     create_file_if_missing()
     return EXCEL_FILE.resolve()
+
+#Сброс данных(То есть удаление excel файла и создание нового)
+
+def reset_data():
+    """Удаляет старые данные и создаёт новый Excel-файл."""
+    create_file_if_missing()
+    EXCEL_FILE.unlink()
+    create_file_if_missing()
