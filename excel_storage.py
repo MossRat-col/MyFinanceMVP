@@ -126,4 +126,12 @@ def save_daily_total(date_string, amount):
 
     workbook.save(EXCEL_FILE)
     workbook.close()
+
 #ААААААААААААААААА. Каким образом я это понимаю????
+#добавляю новую функцию "Открывания таблицы", то есть оригинальный xslsx файл.
+
+
+def get_file_path():
+    """Возвращает путь к Excel-файлу."""
+    create_file_if_missing()
+    return EXCEL_FILE.resolve()

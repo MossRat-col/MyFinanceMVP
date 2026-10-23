@@ -1,0 +1,10 @@
+# Личные финансовые данные
+transactions.xlsx
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Виртуальное окружение
+venv/
+.venv/

@@ -1,5 +1,6 @@
 
-
+import os
+import excel_storage
 import tkinter as tk
 from tkinter import messagebox
 
@@ -74,6 +75,14 @@ class FinanceApp:
             command=lambda: self.add_transaction("expense")
         ).pack(side="left", padx=5)
 
+
+        tk.Button(
+            root,
+            text="Показать в таблице",
+            command=self.open_excel
+        ).pack(pady=(0, 10))
+
+
         self.update_display()
 
     def update_display(self):
@@ -87,6 +96,21 @@ class FinanceApp:
         self.today_label.config(
             text=f"Итог за сегодня: {today_total:,} UZS".replace(",", " ")
         )
+
+    #Функция открытия Excel файла, который хранит всю историю финансовых операций
+
+    def open_excel(self):
+        """Открывает Excel-файл в стандартной программе."""
+
+        try:
+            file_path = excel_storage.get_file_path()
+            os.startfile(file_path)
+
+        except OSError as error:
+            messagebox.showerror(
+                "Ошибка открытия",
+                f"Не удалось открыть Excel-файл:\n{error}"
+            )
 
     def add_transaction(self, transaction_type):
         text = self.amount_entry.get().strip()
@@ -118,4 +142,4 @@ def run_app():
     FinanceApp(root)
     root.mainloop()
 
-#Буду честен, я и сам не совсем понимаю что
+#Буду честен, я и сам не совсем понимаю что здесь происходит, но вроде как это должно работать
