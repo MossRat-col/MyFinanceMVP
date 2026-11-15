@@ -1,6 +1,6 @@
 
 
-
+import subprocess
 from logging import root
 import os
 import excel_storage
@@ -113,7 +113,7 @@ class FinanceApp:
 
         try:
             file_path = excel_storage.get_file_path()
-            os.startfile(file_path)
+            subprocess.Popen(["xdg-open", file_path])
 
         except OSError as error:
             messagebox.showerror(
