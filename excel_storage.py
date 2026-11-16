@@ -1,6 +1,7 @@
 
 from pathlib import Path
 from datetime import date, datetime
+from decimal import Decimal
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font
@@ -10,7 +11,7 @@ from openpyxl.styles import Font
 EXCEL_FILE = Path(__file__).with_name("transactions.xlsx")
 
 # Названия столбцов
-HEADERS = ["ID", "Дата", "Итог за день (UZS)"]
+HEADERS = ["ID", "Дата", "Итог за день", "Валюта"]
 
 
 def create_file_if_missing():
@@ -37,6 +38,19 @@ def create_file_if_missing():
     workbook.close()
 
 
+def _ensure_currency_column(workbook):
+    """Add a currency column to older workbooks; legacy amounts are UZS."""
+    sheet = workbook.active
+    if sheet.cell(row=1, column=4).value != "Валюта":
+        sheet.cell(row=1, column=4).value = "Валюта"
+        sheet.cell(row=1, column=4).font = Font(bold=True)
+        sheet.column_dimensions["D"].width = 14
+
+    for row_number in range(2, sheet.max_row + 1):
+        if sheet.cell(row=row_number, column=4).value in (None, ""):
+            sheet.cell(row=row_number, column=4).value = "UZS"
+
+
 def load_history():
     """Возвращает всю историю из Excel."""
 
@@ -44,11 +58,12 @@ def load_history():
 
     workbook = load_workbook(EXCEL_FILE)
     sheet = workbook.active
+    _ensure_currency_column(workbook)
 
     history = []
 
     for row in sheet.iter_rows(min_row=2, values_only=True):
-        record_id, record_date, daily_total = row
+        record_id, record_date, daily_total, currency = row[:4]
 
         # Пропускаем пустые строки
         if record_id is None or record_date is None:
@@ -63,33 +78,36 @@ def load_history():
         history.append({
             "id": int(record_id),
             "date": record_date,
-            "daily_total": int(daily_total or 0)
+            "daily_total": Decimal(str(daily_total or 0)),
+            "currency": currency or "UZS",
         })
 
+    workbook.save(EXCEL_FILE)
     workbook.close()
     return history
 
 
-def get_daily_total(date_string):
+def get_daily_total(date_string, currency="UZS"):
     """Возвращает итог за указанную дату."""
 
     history = load_history()
 
     for record in history:
-        if record["date"] == date_string:
+        if record["date"] == date_string and record["currency"] == currency:
             return record["daily_total"]
 
     # Если такой даты ещё нет, итог равен нулю
     return 0
 
 
-def save_daily_total(date_string, amount):
+def save_daily_total(date_string, amount, currency="UZS"):
     """Добавляет новую дату или обновляет существующую."""
 
     create_file_if_missing()
 
     workbook = load_workbook(EXCEL_FILE)
     sheet = workbook.active
+    _ensure_currency_column(workbook)
 
     # Ищем дату, которая уже есть в таблице
     for row_number in range(2, sheet.max_row + 1):
@@ -100,9 +118,11 @@ def save_daily_total(date_string, amount):
         else:
             cell_date = str(cell_value) if cell_value is not None else ""
 
-        if cell_date == date_string:
+        row_currency = sheet.cell(row=row_number, column=4).value or "UZS"
+        if cell_date == date_string and row_currency == currency:
             # ID сохраняется, изменяется только дневной итог
-            sheet.cell(row=row_number, column=3).value = int(amount)
+            sheet.cell(row=row_number, column=3).value = float(amount)
+            sheet.cell(row=row_number, column=4).value = currency
 
             workbook.save(EXCEL_FILE)
             workbook.close()
@@ -122,7 +142,7 @@ def save_daily_total(date_string, amount):
 
     new_id = max(valid_ids, default=0) + 1
 
-    sheet.append([new_id, date_string, int(amount)])
+    sheet.append([new_id, date_string, float(amount), currency])
 
     workbook.save(EXCEL_FILE)
     workbook.close()
@@ -138,8 +158,17 @@ def get_file_path():
 
 #Сброс данных(То есть удаление excel файла и создание нового)
 
-def reset_data():
-    """Удаляет старые данные и создаёт новый Excel-файл."""
+def reset_data(currency="UZS"):
+    """Delete entries from one currency account, preserving other accounts."""
     create_file_if_missing()
-    EXCEL_FILE.unlink()
-    create_file_if_missing()
+    workbook = load_workbook(EXCEL_FILE)
+    sheet = workbook.active
+    _ensure_currency_column(workbook)
+
+    for row_number in range(sheet.max_row, 1, -1):
+        row_currency = sheet.cell(row=row_number, column=4).value or "UZS"
+        if row_currency == currency:
+            sheet.delete_rows(row_number)
+
+    workbook.save(EXCEL_FILE)
+    workbook.close()
