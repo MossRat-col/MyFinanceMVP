@@ -40,6 +40,9 @@ def add_transaction(amount, transaction_type):
                        или 'expense' для расхода.
     """
 
+    if type(amount) is not int:
+        raise ValueError("Сумма должна быть целым числом.")
+
     if amount <= 0:
         raise ValueError("Сумма должна быть больше нуля.")
 

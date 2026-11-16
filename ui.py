@@ -125,9 +125,20 @@ class FinanceApp:
         text = self.amount_entry.get().strip()
 
         try:
-            amount = int(text)
+            if not text:
+                raise ValueError("Введите сумму операции.")
 
-            result = logic.add_transaction(
+            try:
+                amount = int(text)
+            except ValueError:
+                raise ValueError(
+                    "Введите целое число без букв и символов."
+                )
+
+            if amount <= 0:
+                raise ValueError("Сумма должна быть больше нуля.")
+
+            logic.add_transaction(
                 amount,
                 transaction_type
             )
@@ -144,6 +155,7 @@ class FinanceApp:
                 "Ошибка",
                 f"Не удалось обработать операцию:\n{error}"
             )
+
     def reset_balance(self):
         """Сбрасывает все финансовые данные после подтверждения."""
 
